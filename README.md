@@ -1,240 +1,647 @@
-DGFA-Net: Degradation-Aware, Landmark-Guided Low-Light Face Enhancement
-Research implementation and empirical evaluation | Computer Vision 2026–27 | Netaji Subhas University of Technology
+# DGFA-Net: Degradation-Aware, Landmark-Guided Low-Light Face Enhancement
 
-DGFA-Net investigates whether explicitly modelling low-light degradation and using facial-landmark-guided attention can improve low-light face enhancement. This repository contains the proposed network, classical and learned baselines, ablation variants, evaluation pipeline, and a verified CPU experiment on real CelebA-HQ photographs.
-Main empirical finding: In the completed 64×64, 14-epoch CPU experiment, the Residual U-Net baseline (A0) achieved higher PSNR and SSIM than the full DGFA-Net variant (A3). A3 achieved slightly lower NME. The current experiment therefore does not demonstrate that the proposed components improve overall reconstruction quality. This negative result is retained rather than obscured.
+**A Research Implementation and Empirical Evaluation of Low-Light Facial Image Enhancement**
 
-Authors: Saloni Singh and Aditya Gayake
-Supervisor: Prof. Ankush Jain
-Research at a glance
-Item	Experimental setup
-Dataset	2,000 real CelebA-HQ photographs
-Split	1,600 train / 200 validation / 200 test
-Input resolution	64 × 64
-Training	14 epochs per learned model; batch size 16
-Random seed	0
-Hardware	CPU; AMD Ryzen 7 8840U
-PyTorch	2.15.0+cpu
-Landmark backend	OpenCV Haar cascade with approximate box-derived 68-point template
-Total pipeline runtime	78 min 22 sec
-LPIPS	Not run; optional dependency and weights were not installed
+**Institution:** Netaji Subhash University of Technology (NSUT)  
+**Academic Year:** 2026-27  
+**Authors:** Saloni Singh and Aditya Gayake  
+**Supervisor:** Prof. Ankush Jain
 
+---
 
-The low-light inputs in this experiment were generated synthetically from well-lit photographs. The results should not be interpreted as validation on a real paired low-light benchmark.
-1. Research question and motivation
-Low-light face images can suffer from reduced illumination, noise, loss of local contrast, and degradation of facial details. A generic enhancement model may improve global brightness without preserving identity-relevant structures.
+## 1. Project Overview
 
-This project evaluates a lightweight, degradation-aware, landmark-guided design with three central ideas:
-1. Degradation estimation: predict illumination and noise maps from the input rather than receiving degradation parameters directly.
-2. Landmark-guided attention: use a facial landmark heat-map to guide feature refinement around facial structure.
-3. Face-presence gating: suppress landmark-guided attention when a face is not detected.
-The central research question is whether these additions improve enhancement quality and facial-structure preservation compared with a simpler supervised baseline under a controlled evaluation protocol.
-2. Proposed pipeline
-Well-lit face photographs
-          |
-          v
-Synthetic low-light degradation
-  exposure + gamma + Poisson/Gaussian noise
-          |
-          +------------------------------+
-          |                              |
-          v                              v
-Brightened-input face detection     Low-light image
-and landmark heat-map                    |
-          |                              |
-          +---------------+--------------+
-                          |
-                          v
-                    DGFA-Net
-                          |
-          +---------------+----------------+
-          |                                |
-          v                                v
- Illumination map M_L                Noise map M_N
-          |                                |
-          +---------------+----------------+
-                          |
-                   Feature fusion
-                          |
-                       Encoder
-                          |
-            Landmark-guided attention
-                 with presence gate
-                          |
-                       Decoder
-                          |
-                          v
-                Enhanced face image
-                          |
-                          v
-             PSNR / SSIM / NME / detection
-                          |
-                          v
-       Baselines + ablations + analysis + figures
-Synthetic degradation model
-The implementation generates low-light observations using exposure scaling, gamma transformation, and noise:
-\[
+Low-light facial images often suffer from poor illumination, reduced contrast, noise, and loss of important facial details. Conventional enhancement techniques can improve overall brightness, but they do not necessarily preserve identity-relevant facial structures.
+
+**DGFA-Net (Degradation-Aware, Landmark-Guided Face Enhancement Network)** investigates whether explicitly estimating image degradation and incorporating facial landmark-guided attention can improve low-light face enhancement.
+
+The proposed architecture combines three central ideas:
+
+1. **Degradation-aware feature learning:** Estimates illumination and noise maps directly from the input image.
+2. **Landmark-guided attention:** Uses facial landmark heatmaps to guide feature refinement around important facial regions.
+3. **Face-presence gating:** Controls landmark-guided attention based on whether a face is detected.
+
+The repository contains the proposed architecture, classical enhancement methods, learned baselines, ablation experiments, evaluation metrics, visualization utilities, and a reproducible CPU experiment.
+
+### Main Experimental Finding
+
+In the completed experiment, the Residual U-Net baseline (A0) achieved higher PSNR and SSIM than the full DGFA-Net configuration (A3). DGFA-Net achieved slightly lower Normalized Mean Error (NME).
+
+The current experiment therefore does not establish that the proposed components improve overall reconstruction quality. This negative result is retained and reported transparently.
+
+---
+
+## 2. Research at a Glance
+
+| Parameter | Experimental Configuration |
+|---|---|
+| Dataset | 2,000 real CelebA-HQ photographs |
+| Training split | 1,600 images |
+| Validation split | 200 images |
+| Test split | 200 images |
+| Input resolution | 64 × 64 |
+| Training duration | 14 epochs per learned model |
+| Batch size | 16 |
+| Random seed | 0 |
+| Hardware | CPU |
+| Processor | AMD Ryzen 7 8840U |
+| PyTorch | 2.15.0+cpu |
+| Landmark backend | OpenCV Haar cascade with approximate box-derived 68-point template |
+| Total pipeline runtime | 78 minutes 22 seconds |
+| LPIPS | Not computed |
+
+**Experimental qualification:** Low-light inputs were synthetically generated from well-lit CelebA-HQ photographs. This experiment is not a validation on a real paired low-light face dataset.
+
+---
+
+## 3. Research Motivation and Objectives
+
+Low-light image enhancement is challenging because illumination degradation affects different regions of an image differently.
+
+For facial images, enhancement should ideally preserve:
+
+- Eye and eyebrow structures
+- Nose and mouth boundaries
+- Facial contours
+- Local texture and identity-related information
+- Overall image contrast and brightness
+
+A model that simply increases brightness may also amplify noise or distort facial details.
+
+### Research Question
+
+Can explicitly modelling low-light degradation and incorporating facial landmark-guided attention improve facial image enhancement compared with a conventional supervised reconstruction network?
+
+### Research Objectives
+
+- Develop a lightweight degradation-aware face enhancement architecture.
+- Estimate illumination and noise information directly from the input image.
+- Incorporate landmark-guided attention into an encoder-decoder network.
+- Introduce a face-presence gate to control the attention mechanism.
+- Compare the proposed model against classical and learned enhancement baselines.
+- Evaluate the contribution of individual components through controlled ablation experiments.
+- Analyse reconstruction quality, structural preservation, detection performance, and inference latency.
+
+---
+
+## 4. Complete Project Pipeline
+
+The following diagram represents the implemented experimental workflow, from dataset preparation to quantitative evaluation.
+
+```mermaid
+flowchart TD
+    A["Well-Lit CelebA-HQ Face Images"] --> B["Dataset Preparation and Train/Val/Test Split"]
+    B --> C["Synthetic Low-Light Degradation"]
+    C --> D["Low-Light Input Images"]
+
+    D --> E["Face Detection and Landmark Processing"]
+    D --> F["DGFA-Net Input"]
+
+    E --> G["Landmark Heatmap and Face-Presence Flag"]
+    F --> H["Feature Extraction"]
+
+    H --> I["Illumination Estimation Head"]
+    H --> J["Noise Estimation Head"]
+
+    I --> K["Degradation-Aware Feature Fusion"]
+    J --> K
+
+    K --> L["Encoder"]
+    G --> M["Landmark-Guided Attention"]
+    L --> M
+
+    M --> N["Face-Presence Gating"]
+    N --> O["Decoder and Residual Reconstruction"]
+    O --> P["Enhanced Face Image"]
+
+    P --> Q["PSNR / SSIM / NME / Detection / Latency"]
+    Q --> R["Baseline Comparison and Ablation Analysis"]
+    R --> S["Statistical Analysis and Visualizations"]
+```
+
+### Step 1: Dataset Preparation
+
+The experiment uses 2,000 real CelebA-HQ photographs.
+
+The dataset is divided into:
+
+- Training: 1,600 images
+- Validation: 200 images
+- Testing: 200 images
+
+The same held-out test inputs are used for all compared enhancement methods to support paired comparisons.
+
+### Step 2: Synthetic Low-Light Degradation
+
+Well-lit images are transformed into low-light observations using exposure reduction, gamma transformation, and noise.
+
+The implemented degradation model is:
+
+$$
 I_{\text{low}} =
-\operatorname{clip}\left(
-\beta I_{\text{gt}}^\gamma + N
+\operatorname{clip}
+\left(
+\beta I_{\text{gt}}^{\gamma} + N
 \right)
-\]
-where \(\beta\) is sampled from \(U[0.2,0.8]\), \(\gamma\) from \(U[1.5,3.0]\), and \(N\) combines signal-dependent Poisson noise and Gaussian read noise.
+$$
 
-The same fixed test inputs are used for all compared methods, enabling paired comparisons on the held-out split.
-DGFA-Net components
-- A feature stem extracts shallow image features.
-- Two degradation heads estimate an illumination map \(M_L\) and noise map \(M_N\).
-- A fusion layer combines the image features and estimated maps.
-- An encoder-decoder predicts a residual enhancement.
-- Landmark-guided attention refines bottleneck features.
-- A face-presence flag gates the attention when a face is unavailable.
-The attention formulation in the implementation is:
-\[
-A_f = \sigma(\operatorname{Conv}_{1\times1}([F_3,H]))\cdot flag
-\]
-\[
-F_{\text{guided}} = F_3(1+\alpha A_f)
-\]
-The output is a residual correction:
-\[
-I_{\text{enh}} = \operatorname{clamp}(I_{\text{low}}+\Delta I)
-\]
-Training objective
-The implemented objective combines reconstruction, structural similarity, face-region weighting, and illumination-map smoothness:
-\[
-L = L_1 + 0.2L_{\text{SSIM}} + 0.5L_{\text{face}} + 0.01L_{\text{TV}}
-\]
-The model is trained with Adam, an initial learning rate of \(2\times10^{-4}\), cosine decay, gradient clipping, and best-validation checkpoint selection.
-3. Baselines and ablation design
-Baselines
-Method	Role
-Input (dark)	Unprocessed lower-bound reference
-Gamma correction	Classical brightness correction
-CLAHE	Classical local contrast enhancement
-Zero-DCE	Re-implementation of a learned zero-reference baseline
-Residual U-Net (A0)	Supervised architectural baseline
-DGFA-Net (A3)	Full proposed configuration
+Where:
 
+- $I_{\text{gt}}$ represents the original ground-truth image.
+- $\beta$ controls exposure intensity.
+- $\gamma$ controls nonlinear brightness transformation.
+- $N$ represents the added noise.
 
-Zero-DCE in this repository is a re-implementation, not the original authors' released checkpoint. Retinex-Net and Low-FaceNet are not bundled; the repository provides an external-method integration route.
-Ablation variants
-Variant	Configuration
-A0	Residual U-Net baseline
-A1	A0 + illumination/noise degradation heads
-A2	A1 + landmark attention, without presence gate
-A3	A1 + landmark attention + presence gate (full DGFA-Net)
-A4	A3 with fixed \(\alpha=0.5\)
-A5	A3 weights, but landmarks detected on the raw dark input
-A6	A3 trained without the face-weighted loss
+The experimental parameter ranges are:
 
+$$
+\beta \sim U[0.2,0.8]
+$$
 
-A0, A1, A2, A3, A4, A6 and Zero-DCE completed in the verified run. A5 is an inference-time evaluation variant using A3 weights.
-4. Quantitative results
-Baselines versus the proposed model
-Results below are from 200 held-out test faces.
-Method	PSNR ↑ (dB)	SSIM ↑	NME ↓	Detection ↑	Latency (ms/image)
-Input (dark)	9.40	0.261	0.025	97%	0.0
-Gamma (1/2.2)	15.83	0.567	0.024	95%	0.0
-CLAHE	13.15	0.523	0.034	93%	0.2
-Zero-DCE (re-implementation)	11.07	0.396	0.037	73%	4.9
-Residual U-Net (A0)	22.29	0.798	0.026	96%	13.3
-DGFA-Net (A3)	22.02	0.784	0.025	96%	14.3
+$$
+\gamma \sim U[1.5,3.0]
+$$
 
+Noise combines signal-dependent Poisson noise and Gaussian read noise.
 
-Interpretation
-- A0 achieved the best PSNR and SSIM in this experiment.
-- A3 was 0.27 dB lower in PSNR and 0.014 lower in SSIM than A0 (rounded table values).
-- A3 achieved slightly lower NME than A0, while both had a 96% face-detection rate.
-- A3's measured latency was 14.3 ms/image versus 13.3 ms/image for A0 in this run.
-- These results do not support a claim that the full DGFA-Net improves overall image reconstruction quality under this configuration.
-Ablation results
-Variant	Description	PSNR ↑	SSIM ↑	NME ↓	Detection ↑
-A0	Residual U-Net	22.29	0.798	0.026	96%
-A1	+ degradation heads	22.10	0.783	0.025	95%
-A2	+ attention, no gate	21.95	0.781	0.026	96%
-A3	+ presence gate (full DGFA-Net)	22.02	0.784	0.025	96%
-A4	Fixed alpha	21.97	0.781	0.025	96%
-A5	Raw-dark landmark detection	22.02	0.784	0.025	95%
-A6	Without face loss	22.19	0.786	0.026	96%
+### Step 3: Face Detection and Landmark Processing
 
+Face detection and landmark processing provide structural information to the enhancement network.
 
-The pipeline reported H1, H2 and H3 as not supported in this run. These outcomes should be read in the context of the small held-out set and short, low-resolution training schedule.
-Paired comparison: A3 versus A0
-- PSNR difference (A3 − A0): −0.27 dB
-- 95% confidence interval: [−0.35, −0.20]
-- Wilcoxon p-value: 3.2 × 10⁻¹¹
-The difference is statistically detectable for this fixed test set and synthetic degradation procedure. It does not establish generalisation to other datasets, resolutions, training schedules, or real-world low-light conditions.
-Fairness diagnostic
-The measured PSNR gaps between the coarse ITA groups were 0.33 dB for A0 and 0.32 dB for A3. This is a diagnostic from the current pipeline, not a fairness certification.
-5. Qualitative results and output figures
-The full experiment generated 21 figures. To make the figures visible on GitHub, copy the generated PNGs from the local output directory into assets/results/research_figures/ in the repository. The outputs/ directory is intentionally ignored by Git, so embedding images directly from it will not work in the published README.
+The implemented experiment uses an OpenCV Haar cascade to detect face bounding boxes. A box-derived approximate 68-point facial template is then used to construct landmark guidance.
 
-After copying the figures, the following embeds will render when the corresponding files exist:
-Dataset and degradation
-Clean dataset samples	Synthetic degradation model
-	
+These are approximate template-derived landmarks, not individually detected ground-truth facial landmarks.
 
+### Step 4: DGFA-Net Enhancement
 
-Landmark guidance and internal representations
+The low-light image and its structural guidance are passed through the proposed network.
 
-Enhancement comparisons and facial details
+The network estimates degradation information, extracts image features, applies landmark-guided attention, and reconstructs an enhanced output.
 
-Eye-region crops	Mouth-region crops
-	
+### Step 5: Evaluation
 
+The enhanced images are evaluated using:
 
-Failure cases and training behaviour
+- Peak Signal-to-Noise Ratio (PSNR)
+- Structural Similarity Index (SSIM)
+- Normalized Mean Error (NME)
+- Face detection rate
+- Inference latency
 
-Figure file note: The exact figure filenames can vary by run. If a filename above differs from the generated file, use the actual filename from the experiment's figures/ directory and update the corresponding Markdown image path. Do not create or substitute illustrative images for measured outputs.
+The results are compared against classical enhancement techniques, learned baselines, and architectural ablations.
 
-6. Reproducibility
-Environment
-The verified experiment used Python 3.12.10 and CPU-only PyTorch 2.15.0. A GPU is optional; the verified laptop run was CPU-only.
-Install
+---
+
+## 5. Proposed DGFA-Net Architecture
+
+DGFA-Net follows an encoder-decoder design with additional degradation estimation and landmark-guided feature refinement.
+
+### 5.1 Feature Extraction Stem
+
+The input low-light image is first passed through a feature extraction stem.
+
+This stage extracts shallow visual information such as local edges, texture, intensity variations, and basic facial structures.
+
+These features form the foundation for subsequent degradation estimation and reconstruction.
+
+### 5.2 Degradation Estimation Heads
+
+The architecture contains two degradation estimation heads.
+
+**Illumination Estimation Head**
+
+Predicts an illumination map:
+
+$$
+M_L = f_L(I_{\text{low}})
+$$
+
+The illumination map provides spatial information about brightness variations across the image.
+
+**Noise Estimation Head**
+
+Predicts a noise map:
+
+$$
+M_N = f_N(I_{\text{low}})
+$$
+
+The noise map provides information about regions that may require noise-aware refinement.
+
+Both maps are estimated from the input rather than directly supplied as degradation parameters.
+
+### 5.3 Degradation-Aware Feature Fusion
+
+The estimated illumination and noise maps are combined with extracted image features.
+
+This allows the network to use degradation-related information during subsequent feature processing.
+
+### 5.4 Encoder-Decoder Network
+
+The fused representation is passed through an encoder-decoder architecture.
+
+- The encoder extracts progressively more abstract feature representations.
+- The bottleneck processes high-level information.
+- The decoder reconstructs spatial details and predicts the enhancement correction.
+
+### 5.5 Landmark-Guided Attention
+
+A landmark heatmap provides spatial guidance to the attention mechanism.
+
+The attention formulation implemented in the project is:
+
+$$
+A_f =
+\sigma
+\left(
+\operatorname{Conv}_{1\times1}([F_3,H])
+\right)
+\cdot \text{flag}
+$$
+
+Where:
+
+- $F_3$ represents the bottleneck feature representation.
+- $H$ represents the landmark heatmap.
+- $\sigma$ represents the sigmoid activation.
+- $\text{flag}$ represents the face-presence indicator.
+
+The guided feature representation is:
+
+$$
+F_{\text{guided}} =
+F_3(1+\alpha A_f)
+$$
+
+This mechanism allows the network to refine features using facial structural guidance.
+
+### 5.6 Face-Presence Gating
+
+Landmark-guided attention should not be relied upon when a face is unavailable.
+
+The face-presence flag controls the attention mechanism, suppressing landmark-guided refinement when a face is not detected.
+
+This is intended to make the architecture more robust to missing face detections.
+
+### 5.7 Residual Reconstruction
+
+Instead of directly predicting the complete enhanced image, the network predicts a residual correction.
+
+$$
+I_{\text{enh}} =
+\operatorname{clamp}
+\left(
+I_{\text{low}}+\Delta I
+\right)
+$$
+
+Where:
+
+- $I_{\text{low}}$ is the original low-light input.
+- $\Delta I$ is the predicted enhancement residual.
+- $I_{\text{enh}}$ is the final enhanced output.
+
+Residual reconstruction allows the model to learn the correction required to transform the degraded image into its enhanced counterpart.
+
+---
+
+## 6. Training Objective
+
+The implemented training objective combines reconstruction, structural similarity, face-region weighting, and illumination-map smoothness.
+
+$$
+\mathcal{L} =
+\mathcal{L}_1
++ 0.2\mathcal{L}_{\text{SSIM}}
++ 0.5\mathcal{L}_{\text{face}}
++ 0.01\mathcal{L}_{\text{TV}}
+$$
+
+The individual terms are:
+
+| Loss | Purpose |
+|---|---|
+| $\mathcal{L}_1$ | Pixel-level reconstruction accuracy |
+| $\mathcal{L}_{\text{SSIM}}$ | Structural similarity preservation |
+| $\mathcal{L}_{\text{face}}$ | Additional emphasis on facial regions |
+| $\mathcal{L}_{\text{TV}}$ | Smoothness regularization for illumination estimation |
+
+### Optimization
+
+The model is trained using:
+
+- Adam optimizer
+- Initial learning rate of $2\times10^{-4}$
+- Cosine learning rate decay
+- Gradient clipping
+- Best-validation checkpoint selection
+
+---
+
+## 7. Baselines and Related Research
+
+A meaningful enhancement model must be compared against both conventional image processing techniques and learned neural network approaches.
+
+The project includes the following comparison methods.
+
+### 7.1 Classical Baselines
+
+| Method | Description |
+|---|---|
+| Input (Dark) | Original low-light image without enhancement |
+| Gamma Correction | Nonlinear intensity transformation for brightness correction |
+| CLAHE | Contrast Limited Adaptive Histogram Equalization for local contrast enhancement |
+
+These methods provide simple reference points for evaluating whether a learned model offers improvements over conventional image enhancement.
+
+### 7.2 Learned Baselines
+
+**Zero-DCE**
+
+Zero-Reference Deep Curve Estimation is a deep learning approach for low-light image enhancement that learns image-specific enhancement curves without requiring paired normal-light reference images during training.
+
+The project includes a re-implementation of Zero-DCE as a learned baseline. It is not the original authors' released checkpoint.
+
+Paper:
+
+Guo et al., *Zero-Reference Deep Curve Estimation for Low-Light Image Enhancement*, CVPR 2020.
+
+**Residual U-Net (A0)**
+
+A supervised encoder-decoder baseline that predicts an image enhancement residual.
+
+It serves as the main architectural comparison for determining whether the additional degradation estimation and landmark-guided attention mechanisms contribute to reconstruction quality.
+
+The encoder-decoder design is related to the U-Net family of architectures.
+
+Reference:
+
+Ronneberger et al., *U-Net: Convolutional Networks for Biomedical Image Segmentation*, MICCAI 2015.
+
+**DGFA-Net (A3)**
+
+The full proposed configuration, incorporating:
+
+- Illumination and noise estimation heads
+- Landmark-guided attention
+- Face-presence gating
+- Residual reconstruction
+
+### 7.3 Additional Relevant Research
+
+**Retinex-Net**
+
+RetinexNet uses Retinex theory to decompose an image into illumination and reflectance components, enabling low-light enhancement through illumination adjustment and reflectance processing.
+
+Reference:
+
+Wei et al., *Deep Retinex Decomposition for Low-Light Enhancement*, BMVC 2018.
+
+Retinex-Net is discussed as relevant related research but is not bundled as a trained baseline in this experiment.
+
+**LPIPS**
+
+Learned Perceptual Image Patch Similarity evaluates perceptual similarity using deep feature representations.
+
+Reference:
+
+Zhang et al., *The Unreasonable Effectiveness of Deep Features as a Perceptual Metric*, CVPR 2018.
+
+LPIPS was not computed in the verified experiment because the optional dependency and weights were unavailable.
+
+---
+
+## 8. Ablation Study
+
+Ablation experiments are used to investigate the contribution of individual architectural components.
+
+| Variant | Configuration |
+|---|---|
+| A0 | Residual U-Net baseline |
+| A1 | A0 + illumination and noise degradation heads |
+| A2 | A1 + landmark attention, without presence gate |
+| A3 | A1 + landmark attention + presence gate |
+| A4 | A3 with fixed $\alpha=0.5$ |
+| A5 | A3 weights, but landmarks detected on the raw dark input |
+| A6 | A3 trained without face-weighted loss |
+
+The following variants completed in the verified run:
+
+A0, A1, A2, A3, A4, A6 and Zero-DCE.
+
+A5 was evaluated at inference time using A3 weights.
+
+### Ablation Results
+
+| Variant | Description | PSNR | SSIM | NME | Detection |
+|---|---|---:|---:|---:|---:|
+| A0 | Residual U-Net | 22.29 | 0.798 | 0.026 | 96% |
+| A1 | + Degradation heads | 22.10 | 0.783 | 0.025 | 95% |
+| A2 | + Attention, no gate | 21.95 | 0.781 | 0.026 | 96% |
+| A3 | + Presence gate | 22.02 | 0.784 | 0.025 | 96% |
+| A4 | Fixed alpha | 21.97 | 0.781 | 0.025 | 96% |
+| A5 | Raw-dark landmark detection | 22.02 | 0.784 | 0.025 | 95% |
+| A6 | Without face loss | 22.19 | 0.786 | 0.026 | 96% |
+
+The pipeline reported H1, H2 and H3 as not supported in this experiment.
+
+The results indicate that the additional architectural components did not improve overall reconstruction metrics over the simpler A0 baseline under the tested configuration.
+
+---
+
+## 9. Quantitative Results
+
+All reported results below are from the 200-image held-out test set.
+
+### 9.1 Baseline Comparison
+
+| Method | PSNR ↑ (dB) | SSIM ↑ | NME ↓ | Detection ↑ | Latency (ms/image) |
+|---|---:|---:|---:|---:|---:|
+| Input (Dark) | 9.40 | 0.261 | 0.025 | 97% | 0.0 |
+| Gamma Correction | 15.83 | 0.567 | 0.024 | 95% | 0.0 |
+| CLAHE | 13.15 | 0.523 | 0.034 | 93% | 0.2 |
+| Zero-DCE | 11.07 | 0.396 | 0.037 | 73% | 4.9 |
+| Residual U-Net (A0) | **22.29** | **0.798** | 0.026 | 96% | 13.3 |
+| DGFA-Net (A3) | 22.02 | 0.784 | **0.025** | 96% | 14.3 |
+
+### 9.2 Interpretation
+
+The main observations are:
+
+1. Residual U-Net (A0) achieved the highest PSNR and SSIM.
+2. DGFA-Net (A3) achieved 22.02 dB PSNR compared with 22.29 dB for A0.
+3. A3 was 0.27 dB lower in PSNR and 0.014 lower in SSIM than A0.
+4. A3 achieved slightly lower NME than A0.
+5. Both A0 and A3 achieved a 96% face detection rate.
+6. A3 recorded an inference latency of 14.3 ms/image compared with 13.3 ms/image for A0.
+
+The current results do not demonstrate that the full DGFA-Net architecture improves overall reconstruction quality over the simpler supervised baseline.
+
+### 9.3 Paired Statistical Comparison
+
+The A3 versus A0 comparison on the fixed test set produced:
+
+| Statistical Measure | Result |
+|---|---:|
+| PSNR difference (A3 - A0) | -0.27 dB |
+| 95% Confidence Interval | [-0.35, -0.20] |
+| Wilcoxon p-value | $3.2\times10^{-11}$ |
+
+The difference is statistically detectable for this particular test set and synthetic degradation procedure.
+
+It does not establish generalisation to other datasets, resolutions, training schedules, or real-world low-light conditions.
+
+### 9.4 Fairness Diagnostic
+
+The measured PSNR gaps between the coarse ITA groups were:
+
+| Model | PSNR Gap |
+|---|---:|
+| A0 | 0.33 dB |
+| A3 | 0.32 dB |
+
+This is a diagnostic from the current experimental pipeline, not a fairness certification.
+
+---
+
+## 10. Qualitative Results and Visualizations
+
+The verified experiment generated **21 PNG figures**. These visualizations are intended to provide qualitative insight into the dataset, synthetic degradation, landmark guidance, enhancement outputs, internal feature representations, facial details, failure cases, and training behaviour.
+
+### Where Are the Images?
+
+The original experiment outputs are stored locally under:
+
+```text
+outputs/
+└── final_cpu_2000_64px_seed0_20261118/
+    └── cpu_faces_64px/
+        └── figures/
+            └── [21 generated PNG figures]
+```
+
+The `outputs/` directory is excluded from Git. For GitHub to display the figures, the selected PNG files must be committed to:
+
+```text
+assets/
+└── results/
+    └── research_figures/
+        ├── 01_dataset_samples.png
+        ├── 02_degradation_model.png
+        ├── 03_landmark_detection.png
+        ├── 04_examples_00.png
+        ├── 05_internal_maps.png
+        ├── 06_crops_eyes.png
+        ├── 06_crops_mouth.png
+        ├── 08_failure_cases.png
+        └── 14_training_curves.png
+```
+
+The filenames above are expected references. Actual filenames may differ depending on the generated run. Update the corresponding Markdown image links if necessary.
+
+### 10.1 Dataset Samples and Synthetic Degradation
+
+![Dataset Samples](assets/results/research_figures/01_dataset_samples.png)
+
+![Synthetic Degradation Model](assets/results/research_figures/02_degradation_model.png)
+
+### 10.2 Face Detection and Landmark Guidance
+
+![Face Detection and Landmark Guidance](assets/results/research_figures/03_landmark_detection.png)
+
+### 10.3 Enhancement Comparisons
+
+![Enhancement Examples](assets/results/research_figures/04_examples_00.png)
+
+### 10.4 Internal Feature Representations
+
+![Internal Feature Maps](assets/results/research_figures/05_internal_maps.png)
+
+### 10.5 Facial Detail Preservation
+
+| Eye Region | Mouth Region |
+|---|---|
+| ![Eye Region Crops](assets/results/research_figures/06_crops_eyes.png) | ![Mouth Region Crops](assets/results/research_figures/06_crops_mouth.png) |
+
+### 10.6 Failure Cases
+
+![Failure Cases](assets/results/research_figures/08_failure_cases.png)
+
+### 10.7 Training Behaviour
+
+![Training Curves](assets/results/research_figures/14_training_curves.png)
+
+**Note:** These links refer to generated experimental outputs, not illustrative images. If a referenced file is absent, replace its path with the actual generated filename or remove that image entry.
+
+---
+
+## 11. Reproducibility
+
+The verified experiment was conducted on a CPU-only machine. A GPU is optional for running the project, although higher-resolution and longer training experiments would benefit from GPU hardware.
+
+### Environment
+
+- Python 3.12.10
+- PyTorch 2.15.0+cpu
+- CPU execution
+- AMD Ryzen 7 8840U
+
+### Installation
+
+Create a virtual environment:
+
+```bash
 py -3.12 -m venv .venv-dgfa
+```
+
+On Windows PowerShell, activate it:
+
+```powershell
 .\.venv-dgfa\Scripts\Activate.ps1
+```
+
+Install dependencies:
+
+```bash
 python -m pip install --upgrade pip
 python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
 python -m pip install -r requirements.txt
 python -m pip install pytest mediapipe six
-Run a quick smoke test
+```
+
+### Run a Smoke Test
+
+```bash
 python run_all.py --preset smoke --device cpu --landmarks cascade --no-lpips
-Reproduce the verified experiment
-This command uses the prepared data/faces directory. It does not require another Kaggle download if the data are already present.
-python run_all.py --preset cpu --data data/faces --device cpu --landmarks cascade --n-images 2000 --size 64 --epochs 14 --batch 16 --seed 0 --no-lpips --out .\outputs\final_cpu_2000_64px_seed0_20261118
-Tests and model inspection
+```
+
+### Reproduce the Verified Experiment
+
+The following command uses the prepared `data/faces` directory. It does not require another dataset download if the data are already present.
+
+```bash
+python run_all.py --preset cpu --data data/faces --device cpu --landmarks cascade --n-images 2000 --size 64 --epochs 14 --batch 16 --seed 0 --no-lpips --out ./outputs/final_cpu_2000_64px_seed0_20261118
+```
+
+### Run Tests
+
+```bash
 python -m pytest -q
+```
+
+### Inspect the Model
+
+```bash
 python dgfa_net.py
-7. Repository outputs
-The verified run is stored locally at:
-outputs/final_cpu_2000_64px_seed0_20261118/cpu_faces_64px/
-It contains:
-- checkpoints/ — trained model checkpoints for A0, A1, A2, A3, A4, A6 and Zero-DCE.
-- figures/ — 21 generated PNG figures.
-- tables/ — CSV, JSON and Markdown result tables.
-- REPORT.md and RESULTS.md — generated experiment reports.
-- log.txt — run log.
-- Per-sample evaluation outputs and training histories.
-The dataset, model checkpoints, caches, and complete run outputs are excluded from Git by .gitignore to keep the source repository manageable. Selected result figures should be copied into assets/results/research_figures/ if they are to appear in the GitHub README.
-8. Limitations and interpretation
-1. Resolution and training budget: the verified run uses 64×64 inputs and 14 epochs, not the report's 256×256/200-epoch protocol.
-2. Synthetic low-light data: degradation is generated from well-lit CelebA-HQ photographs. The experiment does not establish performance on real paired low-light face photographs.
-3. Approximate landmarks: the OpenCV Haar cascade detects face boxes; the 68 points are template-derived rather than individually detected facial landmarks. NME is therefore a limited structural proxy.
-4. LPIPS unavailable: LPIPS was not computed. Its entries should remain n/a; no values are inferred.
-5. Baseline result: A0 outperformed A3 on PSNR and SSIM. The proposed components require further investigation and stronger experiments before any superiority claim.
-6. External baselines: Retinex-Net and Low-FaceNet are not included. Zero-DCE is a project re-implementation rather than the original released model.
-7. Fairness analysis: the ITA grouping is a coarse diagnostic and should not be presented as a fairness certification.
-8. Generalisability: one seed, one dataset source, one resolution and one short training schedule are insufficient for broad claims.
-Next research steps
-- Repeat experiments with multiple seeds and report mean, standard deviation and confidence intervals.
-- Train at higher resolution and with a longer schedule on suitable GPU hardware.
-- Use a robust facial-landmark detector and report landmark failure rates separately.
-- Evaluate on a real paired low-light dataset such as LOL where face-relevant paired samples are available.
-- Investigate degradation-head calibration, attention maps, loss weights and the A0/A3 performance gap.
-- Add independently sourced implementations/checkpoints for additional published baselines under their respective licences.
-9. Project structure
+```
+
+---
+
+## 12. Repository Structure
+
+```text
 DGFA-Net/
+│
 ├── dgfanet/
 │   ├── model.py
 │   ├── degradation.py
@@ -247,22 +654,113 @@ DGFA-Net/
 │   ├── evaluation.py
 │   ├── pipeline.py
 │   └── viz.py
-├── tests/
+│
 ├── assets/
 │   └── results/
 │       └── research_figures/
-├── data/                 # local data; ignored by Git
-├── outputs/              # local checkpoints and experiment outputs; ignored by Git
+│
+├── tests/
+│
+├── data/                  # Local dataset, excluded from Git
+├── outputs/               # Checkpoints and experiment outputs, excluded from Git
+│
 ├── run_all.py
 ├── train.py
 ├── evaluate.py
 ├── run_ablations.py
 ├── download_datasets.py
 ├── enhance_image.py
-├── README.md
-└── requirements.txt
-References
-- Guo et al., “Zero-Reference Deep Curve Estimation for Low-Light Image Enhancement,” CVPR 2020.
-- Wei et al., “Deep Retinex Decomposition for Low-Light Enhancement,” BMVC 2018.
-- Zhang et al., “The Unreasonable Effectiveness of Deep Features as a Perceptual Metric,” CVPR 2018.
-- Project report: DGFA-Net: A Lightweight Degradation-Aware, Landmark-Guided Network for Low-Light Face Image Enhancement, Computer Vision 2026–27.
+│
+├── requirements.txt
+└── README.md
+```
+
+### Experiment Outputs
+
+The verified run is stored locally at:
+
+```text
+outputs/final_cpu_2000_64px_seed0_20261118/cpu_faces_64px/
+```
+
+It contains:
+
+- `checkpoints/`: trained checkpoints for A0, A1, A2, A3, A4, A6 and Zero-DCE.
+- `figures/`: 21 generated PNG figures.
+- `tables/`: CSV, JSON and Markdown result tables.
+- `REPORT.md`: generated experiment report.
+- `RESULTS.md`: experiment results summary.
+- `log.txt`: experiment execution log.
+- Per-sample evaluation outputs and training histories.
+
+The dataset, checkpoints, caches, and complete experiment outputs are excluded from Git to keep the repository manageable. Selected result figures are stored separately under `assets/results/research_figures/` for display in this README.
+
+---
+
+## 13. Limitations
+
+The current implementation and experiment have several limitations that should be considered when interpreting the results.
+
+1. **Resolution and training budget:** The verified run uses 64 × 64 images and 14 epochs. It does not represent the larger 256 × 256, 200-epoch experimental protocol.
+
+2. **Synthetic degradation:** Low-light images are generated from well-lit CelebA-HQ photographs. The results do not establish performance on real paired low-light facial photographs.
+
+3. **Approximate landmarks:** The OpenCV Haar cascade detects face bounding boxes. The 68 facial points are template-derived rather than individually detected facial landmarks. Consequently, NME is a limited structural proxy.
+
+4. **LPIPS unavailable:** LPIPS was not computed because the optional dependency and weights were not installed. No LPIPS values are inferred.
+
+5. **Baseline performance:** A0 outperformed A3 on PSNR and SSIM. The proposed components require further investigation before any superiority claim can be made.
+
+6. **External baselines:** Retinex-Net and Low-FaceNet are not included as trained baselines. Zero-DCE is a project re-implementation rather than the original released model.
+
+7. **Fairness analysis:** ITA grouping is a coarse diagnostic and should not be interpreted as a fairness certification.
+
+8. **Generalisability:** One seed, one dataset source, one resolution, and one short training schedule are insufficient to establish broad generalisation.
+
+---
+
+## 14. Future Work
+
+The following improvements would strengthen the experimental evaluation:
+
+- Repeat experiments across multiple random seeds and report mean, standard deviation, and confidence intervals.
+- Train at higher image resolutions using a longer training schedule and suitable GPU hardware.
+- Replace approximate template-derived landmarks with a robust facial-landmark detector.
+- Evaluate on real paired low-light datasets, including suitable face-relevant samples from the LOL dataset.
+- Investigate degradation-head calibration and attention-map behaviour.
+- Study the effect of loss weights and the observed A0 versus A3 performance gap.
+- Integrate independently sourced implementations and checkpoints of additional published baselines, respecting their respective licences.
+- Evaluate perceptual quality using LPIPS when the required dependency and model weights are available.
+
+---
+
+## 15. References
+
+1. **Guo, C., et al. (2020).** Zero-Reference Deep Curve Estimation for Low-Light Image Enhancement. *Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR).*  
+   https://openaccess.thecvf.com/content_CVPR_2020/html/Guo_Zero-Reference_Deep_Curve_Estimation_for_Low-Light_Image_Enhancement_CVPR_2020_paper.html
+
+2. **Wei, C., et al. (2018).** Deep Retinex Decomposition for Low-Light Enhancement. *British Machine Vision Conference (BMVC).*  
+   https://bmvc2018.org/
+
+3. **Ronneberger, O., Fischer, P., and Brox, T. (2015).** U-Net: Convolutional Networks for Biomedical Image Segmentation. *Medical Image Computing and Computer-Assisted Intervention (MICCAI).*  
+   https://arxiv.org/abs/1505.04597
+
+4. **Zhang, R., et al. (2018).** The Unreasonable Effectiveness of Deep Features as a Perceptual Metric. *Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR).*  
+   https://arxiv.org/abs/1801.03924
+
+5. **DGFA-Net Project Report.** A Lightweight Degradation-Aware, Landmark-Guided Network for Low-Light Face Image Enhancement. Computer Vision, 2026-27.
+
+---
+
+## 16. Conclusion
+
+DGFA-Net investigates the combination of degradation estimation, facial landmark-guided attention, and face-presence gating for low-light facial image enhancement.
+
+The project implements a complete experimental pipeline covering dataset preparation, synthetic degradation, model training, baseline comparison, ablation studies, statistical evaluation, and qualitative visualization.
+
+The verified CPU experiment provides a starting point for further research. Although the full DGFA-Net configuration did not outperform the Residual U-Net baseline on PSNR and SSIM, the implementation and ablation results provide a basis for investigating the contribution of degradation-aware and landmark-guided feature processing.
+
+The project reports both positive and negative findings, identifies experimental limitations, and outlines the additional work required for stronger conclusions.
+
+**Repository:** DGFA-Net  
+**Institution:** Netaji Subhas University of Technology (NSUT)
