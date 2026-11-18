@@ -1,0 +1,11 @@
+# Core dependencies (Python 3.10 - 3.13). Install PyTorch first from https://pytorch.org if you want a specific CUDA build.
+torch>=2.0
+numpy>=1.23
+opencv-python>=4.7
+scikit-image>=0.20
+matplotlib>=3.6
+tqdm>=4.64
+six>=1.16
+# Kaggle dataset download (only needed for download_datasets.py)
+kagglehub>=0.2
+kaggle>=1.6

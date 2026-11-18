@@ -1,0 +1,168 @@
+  ~15-40 min on a laptop CPU: small synthetic run
+  outputs -> /tmp/claude-0/-home-claude/8d3fb79c-709d-5f34-a7fa-c5b9ffc31cbf/scratchpad/out_cpu/cpu_synthetic_64px
+  NOTE: procedural faces -> landmark detection uses a simulated proxy detector (see README).
+  images: 400 (train 320 / val 40 / test 40)
+  test set: 40 face images + 24 face-free scenes (low-light synthesised with fixed seeds)
+  LPIPS: disabled
+  Training the two learned baselines and the full model on the same data ...
+  [A0] Residual U-Net only (no degradation heads, no guidance) | 0.714 M params | 14 epochs x 20 steps
+    epoch   1/14  train loss 0.3151  val PSNR 17.15 dB  [0.2 min]
+    epoch   2/14  train loss 0.2614  val PSNR 17.42 dB  [0.4 min]
+    epoch   3/14  train loss 0.2421  val PSNR 18.24 dB  [0.6 min]
+    epoch   4/14  train loss 0.2288  val PSNR 18.55 dB  [0.8 min]
+    epoch   5/14  train loss 0.2161  val PSNR 18.88 dB  [0.9 min]
+    epoch   6/14  train loss 0.2078  val PSNR 19.16 dB  [1.1 min]
+    epoch   7/14  train loss 0.1961  val PSNR 19.55 dB  [1.4 min]
+    epoch   8/14  train loss 0.1950  val PSNR 19.68 dB  [1.7 min]
+    epoch   9/14  train loss 0.1849  val PSNR 19.87 dB  [1.9 min]
+    epoch  10/14  train loss 0.1893  val PSNR 19.96 dB  [2.1 min]
+    epoch  11/14  train loss 0.1870  val PSNR 20.00 dB  [2.3 min]
+    epoch  12/14  train loss 0.1894  val PSNR 20.06 dB  [2.5 min]
+    epoch  13/14  train loss 0.1833  val PSNR 20.10 dB  [2.7 min]
+    epoch  14/14  train loss 0.1834  val PSNR 20.10 dB  [2.8 min]
+  [A0] best val PSNR 20.10 dB -> A0.pt
+  [A3] A1 + landmark attention + presence gate (full DGFA-Net) | 0.716 M params | 14 epochs x 20 steps
+    epoch   1/14  train loss 0.4015  val PSNR 16.65 dB  [0.2 min]
+    epoch   2/14  train loss 0.2714  val PSNR 17.02 dB  [0.4 min]
+    epoch   3/14  train loss 0.2664  val PSNR 17.48 dB  [0.6 min]
+    epoch   4/14  train loss 0.2463  val PSNR 17.99 dB  [0.8 min]
+    epoch   5/14  train loss 0.2350  val PSNR 18.63 dB  [1.0 min]
+    epoch   6/14  train loss 0.2171  val PSNR 18.89 dB  [1.2 min]
+    epoch   7/14  train loss 0.2166  val PSNR 18.92 dB  [1.4 min]
+    epoch   8/14  train loss 0.2180  val PSNR 19.14 dB  [1.6 min]
+    epoch   9/14  train loss 0.2064  val PSNR 19.36 dB  [1.8 min]
+    epoch  10/14  train loss 0.2029  val PSNR 19.40 dB  [2.0 min]
+    epoch  11/14  train loss 0.2028  val PSNR 19.48 dB  [2.2 min]
+    epoch  12/14  train loss 0.2020  val PSNR 19.49 dB  [2.4 min]
+    epoch  13/14  train loss 0.1985  val PSNR 19.50 dB  [2.6 min]
+    epoch  14/14  train loss 0.1957  val PSNR 19.51 dB  [2.8 min]
+  [A3] best val PSNR 19.51 dB -> A3.pt
+  [Zero-DCE] unsupervised (no ground truth) | 0.079 M params | 14 epochs
+    epoch   1/14  loss 2.1794  [0.1 min]
+    epoch   2/14  loss 1.7982  [0.2 min]
+    epoch   3/14  loss 1.1643  [0.3 min]
+    epoch   4/14  loss 0.9749  [0.4 min]
+    epoch   5/14  loss 0.8969  [0.5 min]
+    epoch   6/14  loss 0.8004  [0.6 min]
+    epoch   7/14  loss 0.7699  [0.7 min]
+    epoch   8/14  loss 0.7292  [0.8 min]
+    epoch   9/14  loss 0.7097  [0.9 min]
+    epoch  10/14  loss 0.6656  [1.0 min]
+    epoch  11/14  loss 0.5771  [1.1 min]
+    epoch  12/14  loss 0.5675  [1.2 min]
+    epoch  13/14  loss 0.5325  [1.3 min]
+    epoch  14/14  loss 0.4952  [1.4 min]
+
+TABLE A - Baselines vs DGFA-Net (40 test faces, 64px; NME/Detect = on the enhanced image)
++---------------------+-----------+-------+--------+-------+-------+-------+-------+--------+
+| Method              | Params(M) | GMACs | ms/img | PSNR  | SSIM  | LPIPS | NME   | Detect |
++---------------------+-----------+-------+--------+-------+-------+-------+-------+--------+
+| Input (dark)        | 0.000     | 0.00  | 0.0    | 8.31  | 0.239 | n/a   | 0.183 | 52%    |
+| Gamma (1/2.2)       | 0.000     | 0.00  | 0.1    | 15.58 | 0.504 | n/a   | 0.209 | 92%    |
+| CLAHE               | 0.000     | 0.00  | 0.2    | 11.28 | 0.327 | n/a   | 0.254 | 68%    |
+| Zero-DCE (re-impl.) | 0.079     | 0.32  | 8.8    | 13.93 | 0.390 | n/a   | 0.299 | 30%    |
+| Residual U-Net (A0) | 0.714     | 0.74  | 14.1   | 20.21 | 0.667 | n/a   | 0.162 | 95%    |
+| DGFA-Net (ours)     | 0.716     | 0.75  | 20.1   | 19.52 | 0.653 | n/a   | 0.158 | 95%    |
++---------------------+-----------+-------+--------+-------+-------+-------+-------+--------+
+  PSNR/SSIM/LPIPS: mean over test faces. NME: landmark error / sqrt(face-box area), lower is better.
+  Detect: % of faces still detected after enhancement. GMACs/ms: one 256x256-equivalent pass at the run size.
+  [A1] A0 + illumination & noise heads | 0.716 M params | 14 epochs x 20 steps
+    epoch   1/14  train loss 0.3274  val PSNR 17.14 dB  [0.2 min]
+    epoch   2/14  train loss 0.2666  val PSNR 17.34 dB  [0.5 min]
+    epoch   3/14  train loss 0.2530  val PSNR 17.97 dB  [0.7 min]
+    epoch   4/14  train loss 0.2369  val PSNR 18.16 dB  [0.9 min]
+    epoch   5/14  train loss 0.2279  val PSNR 18.62 dB  [1.1 min]
+    epoch   6/14  train loss 0.2124  val PSNR 18.99 dB  [1.3 min]
+    epoch   7/14  train loss 0.2156  val PSNR 19.18 dB  [1.6 min]
+    epoch   8/14  train loss 0.2101  val PSNR 19.26 dB  [1.8 min]
+    epoch   9/14  train loss 0.2068  val PSNR 19.28 dB  [2.0 min]
+    epoch  10/14  train loss 0.2060  val PSNR 19.35 dB  [2.2 min]
+    epoch  11/14  train loss 0.2011  val PSNR 19.43 dB  [2.4 min]
+    epoch  12/14  train loss 0.2002  val PSNR 19.50 dB  [2.6 min]
+    epoch  13/14  train loss 0.2022  val PSNR 19.53 dB  [2.8 min]
+    epoch  14/14  train loss 0.1984  val PSNR 19.53 dB  [3.0 min]
+  [A1] best val PSNR 19.53 dB -> A1.pt
+  [A2] A1 + landmark attention, no presence gate | 0.716 M params | 14 epochs x 20 steps
+    epoch   1/14  train loss 0.3438  val PSNR 17.04 dB  [0.2 min]
+    epoch   2/14  train loss 0.2673  val PSNR 17.47 dB  [0.4 min]
+    epoch   3/14  train loss 0.2597  val PSNR 17.70 dB  [0.6 min]
+    epoch   4/14  train loss 0.2445  val PSNR 18.16 dB  [0.8 min]
+    epoch   5/14  train loss 0.2357  val PSNR 18.45 dB  [1.0 min]
+    epoch   6/14  train loss 0.2182  val PSNR 18.98 dB  [1.3 min]
+    epoch   7/14  train loss 0.2112  val PSNR 19.19 dB  [1.5 min]
+    epoch   8/14  train loss 0.2019  val PSNR 19.66 dB  [1.7 min]
+    epoch   9/14  train loss 0.1972  val PSNR 19.72 dB  [1.9 min]
+    epoch  10/14  train loss 0.1922  val PSNR 19.89 dB  [2.1 min]
+    epoch  11/14  train loss 0.1931  val PSNR 20.00 dB  [2.3 min]
+    epoch  12/14  train loss 0.1924  val PSNR 20.01 dB  [2.5 min]
+    epoch  13/14  train loss 0.1907  val PSNR 20.01 dB  [2.7 min]
+    epoch  14/14  train loss 0.1915  val PSNR 20.02 dB  [3.0 min]
+  [A2] best val PSNR 20.02 dB -> A2.pt
+  [A4] A3 with alpha fixed (0.5) instead of learnable | 0.716 M params | 14 epochs x 20 steps
+    epoch   1/14  train loss 0.3887  val PSNR 16.51 dB  [0.2 min]
+    epoch   2/14  train loss 0.2641  val PSNR 17.21 dB  [0.4 min]
+    epoch   3/14  train loss 0.2582  val PSNR 17.76 dB  [0.6 min]
+    epoch   4/14  train loss 0.2459  val PSNR 17.96 dB  [0.8 min]
+    epoch   5/14  train loss 0.2370  val PSNR 17.64 dB  [1.0 min]
+    epoch   6/14  train loss 0.2399  val PSNR 18.41 dB  [1.2 min]
+    epoch   7/14  train loss 0.2257  val PSNR 18.85 dB  [1.4 min]
+    epoch   8/14  train loss 0.2079  val PSNR 19.00 dB  [1.6 min]
+    epoch   9/14  train loss 0.2069  val PSNR 19.32 dB  [1.8 min]
+    epoch  10/14  train loss 0.2093  val PSNR 19.37 dB  [2.0 min]
+    epoch  11/14  train loss 0.2029  val PSNR 19.45 dB  [2.2 min]
+    epoch  12/14  train loss 0.1971  val PSNR 19.51 dB  [2.4 min]
+    epoch  13/14  train loss 0.2009  val PSNR 19.51 dB  [2.6 min]
+    epoch  14/14  train loss 0.1960  val PSNR 19.52 dB  [2.8 min]
+  [A4] best val PSNR 19.52 dB -> A4.pt
+  [A6] A3 trained without the landmark-weighted loss L_face | 0.716 M params | 14 epochs x 20 steps
+    epoch   1/14  train loss 0.2409  val PSNR 17.16 dB  [0.2 min]
+    epoch   2/14  train loss 0.1945  val PSNR 17.34 dB  [0.4 min]
+    epoch   3/14  train loss 0.1875  val PSNR 17.85 dB  [0.6 min]
+    epoch   4/14  train loss 0.1807  val PSNR 18.26 dB  [0.8 min]
+    epoch   5/14  train loss 0.1686  val PSNR 18.75 dB  [1.0 min]
+    epoch   6/14  train loss 0.1579  val PSNR 19.13 dB  [1.2 min]
+    epoch   7/14  train loss 0.1572  val PSNR 19.51 dB  [1.4 min]
+    epoch   8/14  train loss 0.1558  val PSNR 19.59 dB  [1.6 min]
+    epoch   9/14  train loss 0.1493  val PSNR 20.12 dB  [1.8 min]
+    epoch  10/14  train loss 0.1460  val PSNR 20.18 dB  [2.0 min]
+    epoch  11/14  train loss 0.1443  val PSNR 20.34 dB  [2.2 min]
+    epoch  12/14  train loss 0.1457  val PSNR 20.38 dB  [2.4 min]
+    epoch  13/14  train loss 0.1440  val PSNR 20.38 dB  [2.6 min]
+    epoch  14/14  train loss 0.1425  val PSNR 20.41 dB  [2.8 min]
+  [A6] best val PSNR 20.41 dB -> A6.pt
+
+TABLE B - Ablation study (report Table 7.3)
++----+--------------------------+-------+-------+-------+-------+--------+------------+------------+--------------+----------------+
+| ID | Variant                  | PSNR  | SSIM  | LPIPS | NME   | Detect | PSNR noisy | PSNR clean | PSNR darkest | PSNR face-free |
++----+--------------------------+-------+-------+-------+-------+--------+------------+------------+--------------+----------------+
+| A0 | Residual U-Net           | 20.21 | 0.667 | n/a   | 0.162 | 95%    | 20.23      | 20.19      | 19.19        | 20.85          |
+| A1 | + degradation heads      | 19.51 | 0.650 | n/a   | 0.154 | 95%    | 19.30      | 19.72      | 18.01        | 20.26          |
+| A2 | + attention, no gate     | 20.07 | 0.656 | n/a   | 0.155 | 95%    | 20.06      | 20.08      | 19.05        | 20.77          |
+| A3 | + gate (full DGFA-Net)   | 19.52 | 0.653 | n/a   | 0.158 | 95%    | 19.50      | 19.55      | 18.36        | 19.74          |
+| A4 | fixed alpha              | 19.67 | 0.651 | n/a   | 0.155 | 95%    | 19.39      | 19.95      | 18.26        | 20.53          |
+| A5 | detect on raw dark image | 19.51 | 0.654 | n/a   | 0.159 | 95%    | 19.48      | 19.55      | 18.29        | 19.74          |
+| A6 | no L_face                | 20.51 | 0.669 | n/a   | 0.149 | 95%    | 20.46      | 20.57      | 19.33        | 21.37          |
++----+--------------------------+-------+-------+-------+-------+--------+------------+------------+--------------+----------------+
+  A5 landmark detection rate on the dark input: 52% (vs 92% on the brightened input used by A3)
+
+TABLE C - Hypothesis checks (report Section 7.4)
++----+------------------------------------------------------------+---------------------------------------------+---------------------------+
+| ID | Hypothesis                                                 | Observed                                    | Verdict                   |
++----+------------------------------------------------------------+---------------------------------------------+---------------------------+
+| H1 | A1 improves over A0 mainly on noisy inputs                 | gain noisy -0.93 dB vs clean -0.47 dB       | NOT supported in this run |
+| H2 | A3 improves NME vs A1, ~no PSNR change on face-free images | NME 0.158 vs 0.154; face-free PSNR -0.52 dB | NOT supported in this run |
+| H3 | A5 worse than A3 on the darkest samples                    | darkest-third PSNR 18.29 vs 18.36           | SUPPORTED in this run     |
++----+------------------------------------------------------------+---------------------------------------------+---------------------------+
+  Caution: with only 40 test faces (and short training) differences of a few tenths of a dB are
+  within run-to-run noise. Treat verdicts from small presets as a functional check, not as evidence.
+
+TABLE D - Skin-tone fairness: PSNR by ITA group (smaller gap = fairer)
++---------------------+--------------+-------------------+--------------+----------+
+| Method              | PSNR light   | PSNR intermediate | PSNR dark    | gap (dB) |
++---------------------+--------------+-------------------+--------------+----------+
+| Gamma (1/2.2)       | 13.70 (n=13) | 17.12 (n=10)      | 16.11 (n=17) | 3.42     |
+| Residual U-Net (A0) | 18.78 (n=13) | 21.45 (n=10)      | 20.57 (n=17) | 2.67     |
+| DGFA-Net (ours)     | 17.93 (n=13) | 20.96 (n=10)      | 19.90 (n=17) | 3.03     |
++---------------------+--------------+-------------------+--------------+----------+
+  wrote 16 figures -> /tmp/claude-0/-home-claude/8d3fb79c-709d-5f34-a7fa-c5b9ffc31cbf/scratchpad/out_cpu/cpu_synthetic_64px/figures
+  tables saved -> /tmp/claude-0/-home-claude/8d3fb79c-709d-5f34-a7fa-c5b9ffc31cbf/scratchpad/out_cpu/cpu_synthetic_64px/tables

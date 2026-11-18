@@ -1,0 +1,11 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {"name": "1. Sanity check (model size)", "type": "debugpy", "request": "launch", "program": "${workspaceFolder}/dgfa_net.py", "console": "integratedTerminal"},
+    {"name": "2. Instant demo (no training)", "type": "debugpy", "request": "launch", "program": "${workspaceFolder}/demo_prototype.py", "console": "integratedTerminal"},
+    {"name": "3. Smoke test (1-3 min, CPU)", "type": "debugpy", "request": "launch", "program": "${workspaceFolder}/run_all.py", "args": ["--preset", "smoke"], "console": "integratedTerminal"},
+    {"name": "4. Full pipeline - CPU preset", "type": "debugpy", "request": "launch", "program": "${workspaceFolder}/run_all.py", "args": ["--preset", "cpu"], "console": "integratedTerminal"},
+    {"name": "5. REAL run - Kaggle faces (run_kaggle.py)", "type": "debugpy", "request": "launch", "program": "${workspaceFolder}/run_kaggle.py", "args": [], "console": "integratedTerminal"},
+    {"name": "Download Kaggle datasets", "type": "debugpy", "request": "launch", "program": "${workspaceFolder}/download_datasets.py", "console": "integratedTerminal"}
+  ]
+}

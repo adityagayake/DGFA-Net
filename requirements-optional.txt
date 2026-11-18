@@ -1,0 +1,4 @@
+# Optional extras (the pipeline runs without them)
+mediapipe>=0.10        # real facial landmarks (otherwise a face-box + 68-point template is used)
+lpips>=0.1.4           # LPIPS metric (downloads AlexNet weights on first use)
+pytest>=7.0            # tests/
