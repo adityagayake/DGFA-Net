@@ -138,16 +138,16 @@ Well-lit images are transformed into low-light observations using exposure reduc
 The implemented degradation model is:
 
 $$
-I_{\text{low}} =
-\operatorname{clip}
+I_{\mathrm{low}} =
+\mathrm{clip}
 \left(
-\beta I_{\text{gt}}^{\gamma} + N
+\beta I_{\mathrm{gt}}^{\gamma} + N
 \right)
 $$
 
 Where:
 
-- $I_{\text{gt}}$ represents the original ground-truth image.
+- $I_{\mathrm{gt}}$ represents the original ground-truth image.
 - $\beta$ controls exposure intensity.
 - $\gamma$ controls nonlinear brightness transformation.
 - $N$ represents the added noise.
@@ -213,7 +213,7 @@ The architecture contains two degradation estimation heads.
 Predicts an illumination map:
 
 $$
-M_L = f_L(I_{\text{low}})
+M_L = f_L(I_{\mathrm{low}})
 $$
 
 The illumination map provides spatial information about brightness variations across the image.
@@ -223,7 +223,7 @@ The illumination map provides spatial information about brightness variations ac
 Predicts a noise map:
 
 $$
-M_N = f_N(I_{\text{low}})
+M_N = f_N(I_{\mathrm{low}})
 $$
 
 The noise map provides information about regions that may require noise-aware refinement.
@@ -254,9 +254,9 @@ $$
 A_f =
 \sigma
 \left(
-\operatorname{Conv}_{1\times1}([F_3,H])
+\mathrm{Conv}_{1\times1}([F_3,H])
 \right)
-\cdot \text{flag}
+\cdot \mathrm{flag}
 $$
 
 Where:
@@ -264,12 +264,12 @@ Where:
 - $F_3$ represents the bottleneck feature representation.
 - $H$ represents the landmark heatmap.
 - $\sigma$ represents the sigmoid activation.
-- $\text{flag}$ represents the face-presence indicator.
+- $\mathrm{flag}$ represents the face-presence indicator.
 
 The guided feature representation is:
 
 $$
-F_{\text{guided}} =
+F_{\mathrm{guided}} =
 F_3(1+\alpha A_f)
 $$
 
@@ -288,18 +288,18 @@ This is intended to make the architecture more robust to missing face detections
 Instead of directly predicting the complete enhanced image, the network predicts a residual correction.
 
 $$
-I_{\text{enh}} =
-\operatorname{clamp}
+I_{\mathrm{enh}} =
+\mathrm{clamp}
 \left(
-I_{\text{low}}+\Delta I
+I_{\mathrm{low}}+\Delta I
 \right)
 $$
 
 Where:
 
-- $I_{\text{low}}$ is the original low-light input.
+- $I_{\mathrm{low}}$ is the original low-light input.
 - $\Delta I$ is the predicted enhancement residual.
-- $I_{\text{enh}}$ is the final enhanced output.
+- $I_{\mathrm{enh}}$ is the final enhanced output.
 
 Residual reconstruction allows the model to learn the correction required to transform the degraded image into its enhanced counterpart.
 
@@ -312,9 +312,9 @@ The implemented training objective combines reconstruction, structural similarit
 $$
 \mathcal{L} =
 \mathcal{L}_1
-+ 0.2\mathcal{L}_{\text{SSIM}}
-+ 0.5\mathcal{L}_{\text{face}}
-+ 0.01\mathcal{L}_{\text{TV}}
++ 0.2\mathcal{L}_{\mathrm{SSIM}}
++ 0.5\mathcal{L}_{\mathrm{face}}
++ 0.01\mathcal{L}_{\mathrm{TV}}
 $$
 
 The individual terms are:
@@ -322,9 +322,9 @@ The individual terms are:
 | Loss | Purpose |
 |---|---|
 | $\mathcal{L}_1$ | Pixel-level reconstruction accuracy |
-| $\mathcal{L}_{\text{SSIM}}$ | Structural similarity preservation |
-| $\mathcal{L}_{\text{face}}$ | Additional emphasis on facial regions |
-| $\mathcal{L}_{\text{TV}}$ | Smoothness regularization for illumination estimation |
+| $\mathcal{L}_{\mathrm{SSIM}}$ | Structural similarity preservation |
+| $\mathcal{L}_{\mathrm{face}}$ | Additional emphasis on facial regions |
+| $\mathcal{L}_{\mathrm{TV}}$ | Smoothness regularization for illumination estimation |
 
 ### Optimization
 
@@ -342,8 +342,6 @@ The model is trained using:
 
 A meaningful enhancement model must be compared against both conventional image processing techniques and learned neural network approaches.
 
-The project includes the following comparison methods.
-
 ### 7.1 Classical Baselines
 
 | Method | Description |
@@ -352,7 +350,7 @@ The project includes the following comparison methods.
 | Gamma Correction | Nonlinear intensity transformation for brightness correction |
 | CLAHE | Contrast Limited Adaptive Histogram Equalization for local contrast enhancement |
 
-These methods provide simple reference points for evaluating whether a learned model offers improvements over conventional image enhancement.
+These methods provide reference points for evaluating whether a learned model offers improvements over conventional image enhancement.
 
 ### 7.2 Learned Baselines
 
@@ -506,72 +504,59 @@ This is a diagnostic from the current experimental pipeline, not a fairness cert
 
 ## 10. Qualitative Results and Visualizations
 
-The verified experiment generated **21 PNG figures**. These visualizations are intended to provide qualitative insight into the dataset, synthetic degradation, landmark guidance, enhancement outputs, internal feature representations, facial details, failure cases, and training behaviour.
+The verified experiment generated 21 PNG figures. Seven representative figures are included here to illustrate the dataset, degradation process, landmark guidance, enhancement outputs, internal feature representations, quantitative comparison, and training behaviour.
 
-### Where Are the Images?
-
-The original experiment outputs are stored locally under:
-
-```text
-outputs/
-└── final_cpu_2000_64px_seed0_20261118/
-    └── cpu_faces_64px/
-        └── figures/
-            └── [21 generated PNG figures]
-```
-
-The `outputs/` directory is excluded from Git. For GitHub to display the figures, the selected PNG files must be committed to:
+All figures are stored in:
 
 ```text
 assets/
 └── results/
     └── research_figures/
-        ├── 01_dataset_samples.png
-        ├── 02_degradation_model.png
-        ├── 03_landmark_detection.png
-        ├── 04_examples_00.png
-        ├── 05_internal_maps.png
-        ├── 06_crops_eyes.png
-        ├── 06_crops_mouth.png
-        ├── 08_failure_cases.png
-        └── 14_training_curves.png
 ```
 
-The filenames above are expected references. Actual filenames may differ depending on the generated run. Update the corresponding Markdown image links if necessary.
+### 10.1 Dataset Samples
 
-### 10.1 Dataset Samples and Synthetic Degradation
+The dataset samples illustrate the facial images used as the source for the synthetic low-light experiment.
 
 ![Dataset Samples](assets/results/research_figures/01_dataset_samples.png)
 
+### 10.2 Synthetic Low-Light Degradation
+
+This figure illustrates the degradation process used to generate low-light inputs from well-lit photographs.
+
 ![Synthetic Degradation Model](assets/results/research_figures/02_degradation_model.png)
 
-### 10.2 Face Detection and Landmark Guidance
+### 10.3 Face Detection and Landmark Guidance
+
+This visualization illustrates the face detection and approximate landmark guidance used by the network.
 
 ![Face Detection and Landmark Guidance](assets/results/research_figures/03_landmark_detection.png)
 
-### 10.3 Enhancement Comparisons
+### 10.4 Enhancement Comparisons
 
-![Enhancement Examples](assets/results/research_figures/04_examples_00.png)
+Qualitative comparisons help inspect the differences between the original low-light input and the enhanced outputs.
 
-### 10.4 Internal Feature Representations
+![Enhancement Examples](assets/results/research_figures/04_examples_01.png)
+
+### 10.5 Internal Feature Representations
+
+This figure provides a visual representation of the internal feature maps and degradation-related information.
 
 ![Internal Feature Maps](assets/results/research_figures/05_internal_maps.png)
 
-### 10.5 Facial Detail Preservation
+### 10.6 Quantitative PSNR Comparison
 
-| Eye Region | Mouth Region |
-|---|---|
-| ![Eye Region Crops](assets/results/research_figures/06_crops_eyes.png) | ![Mouth Region Crops](assets/results/research_figures/06_crops_mouth.png) |
+The PSNR comparison visualizes the reconstruction performance of the evaluated enhancement methods.
 
-### 10.6 Failure Cases
-
-![Failure Cases](assets/results/research_figures/08_failure_cases.png)
+![PSNR Comparison](assets/results/research_figures/09_psnr_comparison.png)
 
 ### 10.7 Training Behaviour
 
+Training curves provide an overview of the model's optimization and validation behaviour.
+
 ![Training Curves](assets/results/research_figures/14_training_curves.png)
 
-**Note:** These links refer to generated experimental outputs, not illustrative images. If a referenced file is absent, replace its path with the actual generated filename or remove that image entry.
+The complete set of generated figures, including NME comparisons, ablation plots, fairness diagnostics, eye and mouth crops, face-free scenes, and failure cases, is available in `assets/results/research_figures/`.
 
 ---
 
@@ -763,4 +748,4 @@ The verified CPU experiment provides a starting point for further research. Alth
 The project reports both positive and negative findings, identifies experimental limitations, and outlines the additional work required for stronger conclusions.
 
 **Repository:** DGFA-Net  
-**Institution:** Netaji Subhas University of Technology (NSUT)
+**Institution:** Netaji Subhash University of Technology (NSUT)
