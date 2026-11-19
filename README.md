@@ -682,19 +682,14 @@ The following improvements would strengthen the experimental evaluation:
 2. **Fan, Y., et al. (2024).** Low-FaceNet: Face Recognition-Driven Low-Light Image Enhancement. *IEEE Transactions on Instrumentation and Measurement, 73, 5019413.*  
    https://scholars.ln.edu.hk/en/publications/low-facenet-face-recognition-driven-low-light-image-enhancement/
 
-3. **Liang, D., Xu, Z., Li, L., Wei, M., and Chen, S. (2024).** PIE: Physics-Inspired Low-Light Enhancement. *arXiv preprint arXiv:2404.04586.*  
-   https://arxiv.org/abs/2404.04586
-
-4. **Liu, F., and Fan, L. (2025).** A Review of Advancements in Low-Light Image Enhancement Using Deep Learning. *Neurocomputing, 131052 (arXiv:2505.05759).*  
+3. **Liu, F., and Fan, L. (2025).** A Review of Advancements in Low-Light Image Enhancement Using Deep Learning. *Neurocomputing, 131052 (arXiv:2505.05759).*  
    https://arxiv.org/abs/2505.05759
 
-5. **Unidpro (2025).** Facial Skin Condition Dataset, 1200 Image. *Kaggle.*  
+4. **Unidpro (2025).** Facial Skin Condition Dataset, 1200 Image. *Kaggle.*  
    https://www.kaggle.com/datasets/unidpro/facial-skin-condition-dataset
 
-6. **Google (2026).** MediaPipe Face Landmarker Guide. *Online documentation, accessed November 2026.*  
+5. **Google (2026).** MediaPipe Face Landmarker Guide. *Online documentation, accessed November 2026.*  
    https://ai.google.dev/edge/mediapipe
-
-7. **DGFA-Net Project Report.** A Lightweight Degradation-Aware, Landmark-Guided Network for Low-Light Face Image Enhancement. Singh, S. and Gayake, A., Computer Vision, Netaji Subhas University of Technology, 2026-27.
 
 
 **Repository:** DGFA-Net  
