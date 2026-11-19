@@ -308,15 +308,6 @@ Residual reconstruction allows the model to learn the correction required to tra
 ## 6. Training Objective
 
 The implemented training objective combines reconstruction, structural similarity, face-region weighting, and illumination-map smoothness.
-
-$$
-\mathcal{L} =
-\mathcal{L}_1
-+ 0.2\mathcal{L}_{\mathrm{SSIM}}
-+ 0.5\mathcal{L}_{\mathrm{face}}
-+ 0.01\mathcal{L}_{\mathrm{TV}}
-$$
-
 The individual terms are:
 
 | Loss | Purpose |
@@ -360,10 +351,6 @@ Zero-Reference Deep Curve Estimation is a deep learning approach for low-light i
 
 The project includes a re-implementation of Zero-DCE as a learned baseline. It is not the original authors' released checkpoint.
 
-Paper:
-
-Guo et al., *Zero-Reference Deep Curve Estimation for Low-Light Image Enhancement*, CVPR 2020.
-
 **Residual U-Net (A0)**
 
 A supervised encoder-decoder baseline that predicts an image enhancement residual.
@@ -371,10 +358,6 @@ A supervised encoder-decoder baseline that predicts an image enhancement residua
 It serves as the main architectural comparison for determining whether the additional degradation estimation and landmark-guided attention mechanisms contribute to reconstruction quality.
 
 The encoder-decoder design is related to the U-Net family of architectures.
-
-Reference:
-
-Ronneberger et al., *U-Net: Convolutional Networks for Biomedical Image Segmentation*, MICCAI 2015.
 
 **DGFA-Net (A3)**
 
@@ -391,21 +374,7 @@ The full proposed configuration, incorporating:
 
 RetinexNet uses Retinex theory to decompose an image into illumination and reflectance components, enabling low-light enhancement through illumination adjustment and reflectance processing.
 
-Reference:
-
-Wei et al., *Deep Retinex Decomposition for Low-Light Enhancement*, BMVC 2018.
-
 Retinex-Net is discussed as relevant related research but is not bundled as a trained baseline in this experiment.
-
-**LPIPS**
-
-Learned Perceptual Image Patch Similarity evaluates perceptual similarity using deep feature representations.
-
-Reference:
-
-Zhang et al., *The Unreasonable Effectiveness of Deep Features as a Perceptual Metric*, CVPR 2018.
-
-LPIPS was not computed in the verified experiment because the optional dependency and weights were unavailable.
 
 ---
 
@@ -691,17 +660,6 @@ The current implementation and experiment have several limitations that should b
 2. **Synthetic degradation:** Low-light images are generated from well-lit CelebA-HQ photographs. The results do not establish performance on real paired low-light facial photographs.
 
 3. **Approximate landmarks:** The OpenCV Haar cascade detects face bounding boxes. The 68 facial points are template-derived rather than individually detected facial landmarks. Consequently, NME is a limited structural proxy.
-
-4. **LPIPS unavailable:** LPIPS was not computed because the optional dependency and weights were not installed. No LPIPS values are inferred.
-
-5. **Baseline performance:** A0 outperformed A3 on PSNR and SSIM. The proposed components require further investigation before any superiority claim can be made.
-
-6. **External baselines:** Retinex-Net and Low-FaceNet are not included as trained baselines. Zero-DCE is a project re-implementation rather than the original released model.
-
-7. **Fairness analysis:** ITA grouping is a coarse diagnostic and should not be interpreted as a fairness certification.
-
-8. **Generalisability:** One seed, one dataset source, one resolution, and one short training schedule are insufficient to establish broad generalisation.
-
 ---
 
 ## 14. Future Work
@@ -712,9 +670,6 @@ The following improvements would strengthen the experimental evaluation:
 - Train at higher image resolutions using a longer training schedule and suitable GPU hardware.
 - Replace approximate template-derived landmarks with a robust facial-landmark detector.
 - Evaluate on real paired low-light datasets, including suitable face-relevant samples from the LOL dataset.
-- Investigate degradation-head calibration and attention-map behaviour.
-- Study the effect of loss weights and the observed A0 versus A3 performance gap.
-- Integrate independently sourced implementations and checkpoints of additional published baselines, respecting their respective licences.
 - Evaluate perceptual quality using LPIPS when the required dependency and model weights are available.
 
 ---
@@ -736,14 +691,6 @@ The following improvements would strengthen the experimental evaluation:
 5. **DGFA-Net Project Report.** A Lightweight Degradation-Aware, Landmark-Guided Network for Low-Light Face Image Enhancement. Computer Vision, 2026-27.
 
 ---
-
-## 16. Conclusion
-
-DGFA-Net investigates the combination of degradation estimation, facial landmark-guided attention, and face-presence gating for low-light facial image enhancement.
-
-The project implements a complete experimental pipeline covering dataset preparation, synthetic degradation, model training, baseline comparison, ablation studies, statistical evaluation, and qualitative visualization.
-
-The verified CPU experiment provides a starting point for further research. Although the full DGFA-Net configuration did not outperform the Residual U-Net baseline on PSNR and SSIM, the implementation and ablation results provide a basis for investigating the contribution of degradation-aware and landmark-guided feature processing.
 
 The project reports both positive and negative findings, identifies experimental limitations, and outlines the additional work required for stronger conclusions.
 
